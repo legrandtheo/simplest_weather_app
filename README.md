@@ -2,7 +2,7 @@
 
 Une application de bureau légère et performante permettant de consulter la météo en temps réel pour n'importe quelle ville dans le monde. Développée en C++ moderne avec une interface graphique basée sur Dear ImGui.
 
-![Aperçu de l'application](screenshot.png)
+![Aperçu de l'application](app_preview.png)
 
 ## Fonctionnalités
 

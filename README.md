@@ -34,9 +34,3 @@ Avant de compiler, assurez-vous d'avoir installé :
 ## Installation et Compilation
 
 Ce projet utilise **vcpkg** pour gérer les bibliothèques.
-
-### 1. Cloner le dépôt
-
-```bash
-git clone [https://github.com/votre-nom-utilisateur/weather-app-cpp.git](https://github.com/votre-nom-utilisateur/weather-app-cpp.git)
-cd weather-app-cpp

@@ -12,13 +12,14 @@
 #include "GLFW/glfw3.h"
 
 #include "classes/api_json_decomposer.h"
+#include "classes/ImGui_utilities.h"
 #include "classes/weather_utilities.h"
 
 
 using namespace std;
 
 const string API_URL = "https://api.open-meteo.com/v1/forecast?latitude=48.85341&longitude=2.3488&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&current=temperature_2m,apparent_temperature,wind_direction_10m,wind_speed_10m,relative_humidity_2m,surface_pressure&timezone=Europe%2FParis";
-
+const string AQ_URL = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=48.8534&longitude=2.3488&current=european_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone&timezone=Europe%2FBerlin";
 
 void console_printer()
 {
@@ -28,7 +29,7 @@ void console_printer()
 
 
     api_json_decomposer data_retriever;
-    data_retriever.old_init(API_URL);
+    data_retriever.dual_init(API_URL, AQ_URL);
 
     cout << "CURRENT TEMPERATURE : " << data_retriever.temp_holder_celcius.current_temp << "    |    "<< "FELT TEMPERATURE : " << data_retriever.temp_holder_celcius.felt_temp << endl;
     cout << "MAX TEMPERATURE TODAY : " << data_retriever.temp_holder_celcius.max_today_temp << "    |    "<< "MIN TEMPERATURE TODAY : " << data_retriever.temp_holder_celcius.min_today_temp << endl;
@@ -43,7 +44,7 @@ int main()
 
     if (!glfwInit()) return 1;
 
-    GLFWwindow *window = glfwCreateWindow(420,300, "Simplest weather app", nullptr, nullptr);
+    GLFWwindow *window = glfwCreateWindow(440,360, "Simplest weather app", nullptr, nullptr);
     if (window == nullptr) return 1;
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
@@ -83,7 +84,7 @@ int main()
         ImGui::Spacing();
         ImGui::Text("Status : %s", data_retriever.status.c_str());
 
-        if (ImGui::BeginTable("LayoutSplit", 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable))
+        if (ImGui::BeginTable("MainITable", 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable))
         {
             //FIRST COLUMN
             ImGui::TableNextColumn();
@@ -112,10 +113,38 @@ int main()
                 ImGui::Text("Current pressure : %.1f hPa", data_retriever.other_data.surface_pressure);
                 ImGui::Text("Sunset time : %s", weather_utilities::get_time_from_fulldate_iso(data_retriever.suntime.sunset).c_str());
             }
+            ImGui::EndTable();
+        }
+        if (ImGui::BeginTable("AirQTable", 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable))
+        {
+            //FIRST COLUMN
+            ImGui::TableNextColumn();
+            ImGui::Spacing();
+            ImGui::Separator();
 
-        ImGui::EndTable();
-    }
+            if (data_retriever.status != "No data yet")
+            {
+                ImGui::TextColored(ImGui_Utils::GetAQIColor(data_retriever.AQ_data.EU_AQI),"EU air quality index : %zu U", data_retriever.AQ_data.EU_AQI);
+                ImGui::TextColored(ImGui_Utils::GetPM10color(data_retriever.AQ_data.pm10),"Coarse particles : %.1f µg/m³", data_retriever.AQ_data.pm10);
+                ImGui::TextColored(ImGui_Utils::GetO3Color(data_retriever.AQ_data.O3),"O3 particles : %.1f µg/m³", data_retriever.AQ_data.O3);
+                ImGui::TextColored(ImGui_Utils::GetSO2Color(data_retriever.AQ_data.SO2),"SO2 particles : %.1f µg/m³", data_retriever.AQ_data.SO2);
 
+            }
+            //SECOND COLUMN
+            ImGui::TableNextColumn();
+            ImGui::Spacing();
+            ImGui::Separator();
+
+            if (data_retriever.status != "No data yet")
+            {
+                ImGui::Text("");
+                ImGui::TextColored(ImGui_Utils::GetPM2_5Color(data_retriever.AQ_data.pm2_5),"Fine particles : %.1f µg/m³", data_retriever.AQ_data.pm2_5);
+                ImGui::TextColored(ImGui_Utils::GetNO2Color(data_retriever.AQ_data.NO2),"NO2 particles : %.1f µg/m³", data_retriever.AQ_data.NO2);
+                ImGui::TextColored(ImGui_Utils::GetCOColor(data_retriever.AQ_data.CO),"CO particles : %.1f µg/m³", data_retriever.AQ_data.CO);
+
+            }
+            ImGui::EndTable();
+        }
 
     ImGui::End();
 

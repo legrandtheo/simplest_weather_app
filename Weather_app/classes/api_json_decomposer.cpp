@@ -62,7 +62,7 @@ nlohmann::json api_json_decomposer::json_getter(const std::string &API_URL)
     return data_json;
 }
 
-void api_json_decomposer::attributes_filler(const nlohmann::json& json_data)
+void api_json_decomposer::main_attributes_filler(const nlohmann::json& json_data)
 {
     //FIRST FILLING THE TEMPERATURE DATA
     temp_holder_celcius.current_temp = json_data["current"]["temperature_2m"];
@@ -82,13 +82,31 @@ void api_json_decomposer::attributes_filler(const nlohmann::json& json_data)
     other_data.surface_pressure = json_data["current"]["surface_pressure"];
     other_data.UV_index = json_data["daily"]["uv_index_max"][0];
 
-    status = "Data fully parsed";
+    status = "Main data parsed";
 }
 
-void api_json_decomposer::old_init(const std::string &API_URL)
+void api_json_decomposer::air_quality_attributes_filler(const nlohmann::json &json_data)
+{
+    //FILLING THE AIR QUALITY IN ORDER
+    AQ_data.EU_AQI = json_data["current"]["european_aqi"];
+    AQ_data.pm10 = json_data["current"]["pm10"];
+    AQ_data.pm2_5 = json_data["current"]["pm2_5"];
+    AQ_data.CO = json_data["current"]["carbon_monoxide"];
+    AQ_data.NO2 = json_data["current"]["nitrogen_dioxide"];
+    AQ_data.SO2 = json_data["current"]["sulphur_dioxide"];
+    AQ_data.O3 = json_data["current"]["ozone"];
+
+    status.append(" | AQ parsed");
+}
+
+void api_json_decomposer::dual_init(const std::string &MAIN_URL, const std::string &AQ_URL)
 {
     status = "Initializing the new data";
-    attributes_filler(json_getter(API_URL));
+
+    main_attributes_filler(json_getter(MAIN_URL));
+    air_quality_attributes_filler(json_getter(AQ_URL));
+
+    status = "Main DATA OK | AQ DATA OK";
 }
 
 std::string api_json_decomposer::url_spaces_remover(const std::string &unnormalized_string)
@@ -112,17 +130,34 @@ std::string api_json_decomposer::get_BASE_URL_from_city_name(const std::string &
     return BASE_API_URL;
 }
 
-std::string api_json_decomposer::get_FINAL_URL_from_BASE_URL(const std::string &base_url)
+std::string api_json_decomposer::get_MAIN_URL_from_BASE_URL(const std::string &base_url)
 {
     auto city_name_json = json_getter(base_url);
 
-    std::string finalURL{URL_parts.at(0)};
+    std::string finalURL{main_URL_parts.at(0)};
     finalURL.append(to_string(city_name_json["results"][0]["latitude"]));
 
-    finalURL.append(URL_parts.at(1));
+    finalURL.append(main_URL_parts.at(1));
     finalURL.append(to_string(city_name_json["results"][0]["longitude"]));
 
-    finalURL.append(URL_parts.at(2));
+    finalURL.append(main_URL_parts.at(2));
+    const std::string normalized_timezone = url_spaces_remover(city_name_json["results"][0]["timezone"]);
+    finalURL.append(normalized_timezone);
+
+    return finalURL;
+}
+
+std::string api_json_decomposer::get_AQ_URL_from_BASE_URL(const std::string &base_url)
+{
+    auto city_name_json = json_getter(base_url);
+
+    std::string finalURL{AQ_URL_parts.at(0)};
+    finalURL.append(to_string(city_name_json["results"][0]["latitude"]));
+
+    finalURL.append(AQ_URL_parts.at(1));
+    finalURL.append(to_string(city_name_json["results"][0]["longitude"]));
+
+    finalURL.append(AQ_URL_parts.at(2));
     const std::string normalized_timezone = url_spaces_remover(city_name_json["results"][0]["timezone"]);
     finalURL.append(normalized_timezone);
 
@@ -133,6 +168,8 @@ void api_json_decomposer::refresh_from_city_name(const std::string &city_name)
 {
     const std::string baseURL = get_BASE_URL_from_city_name(city_name);
 
-    const std::string finalURL = get_FINAL_URL_from_BASE_URL(baseURL);
-    old_init(finalURL);
+    const std::string mainURL = get_MAIN_URL_from_BASE_URL(baseURL);
+
+    const std::string AQ_URL = get_AQ_URL_from_BASE_URL(baseURL);
+    dual_init(mainURL, AQ_URL);
 }

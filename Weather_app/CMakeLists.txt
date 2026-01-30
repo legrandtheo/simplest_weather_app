@@ -16,10 +16,12 @@ add_executable(Weather_app
         classes/api_json_decomposer.cpp
         classes/api_json_decomposer.h
         classes/weather_utilities.cpp
-        classes/weather_utilities.h)
+        classes/weather_utilities.h
+        classes/ImGui_utilities.cpp
+        classes/ImGui_utilities.h)
 
 target_link_libraries(Weather_app PRIVATE CURL::libcurl nlohmann_json::nlohmann_json imgui::imgui glfw OpenGL::GL)
 
-#set_target_properties(Weather_app PROPERTIES WIN32_EXECUTABLE TRUE)
+set_target_properties(Weather_app PROPERTIES WIN32_EXECUTABLE TRUE)
 
-#target_link_options(Weather_app PRIVATE "/SUBSYSTEM:WINDOWS" "/ENTRY:mainCRTStartup")
+target_link_options(Weather_app PRIVATE "/SUBSYSTEM:WINDOWS" "/ENTRY:mainCRTStartup")

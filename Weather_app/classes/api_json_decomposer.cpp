@@ -17,6 +17,11 @@ size_t api_json_decomposer::useful_write_function(void *ptr, size_t size, size_t
     return real_size;
 }
 
+std::string api_json_decomposer::useful_day_from_fulldate_function(const std::string &fulldate)
+{
+    return fulldate.substr(fulldate.size()-2,2).append(fulldate.substr(fulldate.size()-6,3));
+}
+
 nlohmann::json api_json_decomposer::json_getter(const std::string &API_URL)
 {
     std::string request_buffer;
@@ -69,6 +74,27 @@ void api_json_decomposer::main_attributes_filler(const nlohmann::json& json_data
     temp_holder_celcius.felt_temp = json_data["current"]["apparent_temperature"];
     temp_holder_celcius.max_today_temp = json_data["daily"]["temperature_2m_max"][0];
     temp_holder_celcius.min_today_temp = json_data["daily"]["temperature_2m_min"][0];
+
+
+    temp_holder_celcius.min_week_temps.clear();
+    temp_holder_celcius.max_week_temps.clear();
+    temp_holder_celcius.dates_week_temps.clear();
+
+    //EACH DAY FOR THE WEEK GRAPH OF, MIN TEMP, MAX TEMP AND LASTLY CONCERNED DATE
+    for (const auto& min_temp : json_data["daily"]["temperature_2m_min"])
+    {
+        temp_holder_celcius.min_week_temps.push_back(min_temp);
+    }
+
+    for (const auto& max_temp : json_data["daily"]["temperature_2m_max"])
+    {
+        temp_holder_celcius.max_week_temps.push_back(max_temp);
+    }
+
+    for (const auto& current_date : json_data["daily"]["time"])
+    {
+        temp_holder_celcius.dates_week_temps.push_back(useful_day_from_fulldate_function(current_date));
+    }
 
     //SECONDLY WIND DATA
     wind_holder.wind_speed_km_h = json_data["current"]["wind_speed_10m"];
@@ -130,34 +156,17 @@ std::string api_json_decomposer::get_BASE_URL_from_city_name(const std::string &
     return BASE_API_URL;
 }
 
-std::string api_json_decomposer::get_MAIN_URL_from_BASE_URL(const std::string &base_url)
+std::string api_json_decomposer::get_URL_from_URL_PARTS(const std::string &base_url, const std::vector<std::string>& URL_PARTS)
 {
     auto city_name_json = json_getter(base_url);
 
-    std::string finalURL{main_URL_parts.at(0)};
+    std::string finalURL{URL_PARTS.at(0)};
     finalURL.append(to_string(city_name_json["results"][0]["latitude"]));
 
-    finalURL.append(main_URL_parts.at(1));
+    finalURL.append(URL_PARTS.at(1));
     finalURL.append(to_string(city_name_json["results"][0]["longitude"]));
 
-    finalURL.append(main_URL_parts.at(2));
-    const std::string normalized_timezone = url_spaces_remover(city_name_json["results"][0]["timezone"]);
-    finalURL.append(normalized_timezone);
-
-    return finalURL;
-}
-
-std::string api_json_decomposer::get_AQ_URL_from_BASE_URL(const std::string &base_url)
-{
-    auto city_name_json = json_getter(base_url);
-
-    std::string finalURL{AQ_URL_parts.at(0)};
-    finalURL.append(to_string(city_name_json["results"][0]["latitude"]));
-
-    finalURL.append(AQ_URL_parts.at(1));
-    finalURL.append(to_string(city_name_json["results"][0]["longitude"]));
-
-    finalURL.append(AQ_URL_parts.at(2));
+    finalURL.append(URL_PARTS.at(2));
     const std::string normalized_timezone = url_spaces_remover(city_name_json["results"][0]["timezone"]);
     finalURL.append(normalized_timezone);
 
@@ -168,8 +177,9 @@ void api_json_decomposer::refresh_from_city_name(const std::string &city_name)
 {
     const std::string baseURL = get_BASE_URL_from_city_name(city_name);
 
-    const std::string mainURL = get_MAIN_URL_from_BASE_URL(baseURL);
+    const std::string mainURL = get_URL_from_URL_PARTS(baseURL, main_URL_parts);
 
-    const std::string AQ_URL = get_AQ_URL_from_BASE_URL(baseURL);
+    const std::string AQ_URL = get_URL_from_URL_PARTS(baseURL, AQ_URL_parts);
+    std::cout << mainURL << std::endl;
     dual_init(mainURL, AQ_URL);
 }

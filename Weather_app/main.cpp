@@ -44,7 +44,7 @@ int main()
 
     if (!glfwInit()) return 1;
 
-    GLFWwindow *window = glfwCreateWindow(440,360, "Simplest weather app", nullptr, nullptr);
+    GLFWwindow *window = glfwCreateWindow(460,480, "Simplest weather app", nullptr, nullptr);
     if (window == nullptr) return 1;
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
@@ -141,9 +141,51 @@ int main()
                 ImGui::TextColored(ImGui_Utils::GetPM2_5Color(data_retriever.AQ_data.pm2_5),"Fine particles : %.1f µg/m³", data_retriever.AQ_data.pm2_5);
                 ImGui::TextColored(ImGui_Utils::GetNO2Color(data_retriever.AQ_data.NO2),"NO2 particles : %.1f µg/m³", data_retriever.AQ_data.NO2);
                 ImGui::TextColored(ImGui_Utils::GetCOColor(data_retriever.AQ_data.CO),"CO particles : %.1f µg/m³", data_retriever.AQ_data.CO);
-
             }
             ImGui::EndTable();
+        }
+
+        if (!data_retriever.temp_holder_celcius.dates_week_temps.empty())
+        {
+            ImGui::Separator();
+            ImGui::Text("Daily temperature data for the next week");
+
+            const float global_weekly_mintemp = *ranges::min_element(data_retriever.temp_holder_celcius.min_week_temps);
+            const float global_weekly_maxtemp = *ranges::max_element(data_retriever.temp_holder_celcius.max_week_temps);
+            const float global_diff = (global_weekly_maxtemp - global_weekly_mintemp)*0.3f;
+
+            const float min_scale = global_weekly_mintemp - global_diff;
+            const float max_scale =  global_weekly_maxtemp + global_diff;
+
+            float posY_start = ImGui::GetCursorPosY();
+
+            ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(1,0,0,1));
+            ImGui::PlotLines("##MeteoGraphMax", data_retriever.temp_holder_celcius.max_week_temps.data(), data_retriever.temp_holder_celcius.max_week_temps.size(), 0, nullptr, min_scale, max_scale, ImVec2(445,100));
+            ImGui::PopStyleColor();
+
+            ImGui::SetCursorPosY(posY_start);
+
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0,0,0,0));
+            ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(0,0.5f,1,1));
+            ImGui::PlotLines("##MeteoGraphMin", data_retriever.temp_holder_celcius.min_week_temps.data(), data_retriever.temp_holder_celcius.min_week_temps.size(), 0, nullptr, min_scale, max_scale, ImVec2(445,100));
+            ImGui::PopStyleColor(2);
+
+            if (ImGui::IsItemHovered())
+            {
+
+                const float mouseX = ImGui::GetMousePos().x - ImGui::GetItemRectMin().x;
+                const float graphwidth = ImGui::GetItemRectSize().x;
+
+                if (const int index = static_cast<int>(data_retriever.temp_holder_celcius.max_week_temps.size() * mouseX / graphwidth); index >= 0 && index < data_retriever.temp_holder_celcius.max_week_temps.size())
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::Text("Date : %s", data_retriever.temp_holder_celcius.dates_week_temps[index].c_str());
+                    ImGui::Separator();
+                    ImGui::TextColored(ImVec4(1,0.3f,0.3f,1), "Temperature max : %.1f C", data_retriever.temp_holder_celcius.max_week_temps[index]);
+                    ImGui::TextColored(ImVec4(0.3f,0.6f,0,1), "Temperature min : %.1f C", data_retriever.temp_holder_celcius.min_week_temps[index]);
+                    ImGui::EndTooltip();
+                }
+            }
         }
 
     ImGui::End();

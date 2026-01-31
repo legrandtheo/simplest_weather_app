@@ -12,6 +12,9 @@ struct temperature_holder_celcius
     double felt_temp;
     double max_today_temp;
     double min_today_temp;
+    std::vector<float> max_week_temps;
+    std::vector<float> min_week_temps;
+    std::vector<std::string> dates_week_temps;
 };
 struct wind_holder
 {
@@ -57,11 +60,11 @@ public:
     std::string status{"No data yet"};
 private:
     size_t static useful_write_function(void *ptr, size_t size, size_t nmemb, void *userdata);
+    std::string static useful_day_from_fulldate_function(const std::string& fulldate);
 
     static std::string url_spaces_remover(const std::string& unnormalized_string);
     std::string get_BASE_URL_from_city_name(const std::string& city_name);
-    std::string get_MAIN_URL_from_BASE_URL(const std::string& base_url);
-    std::string get_AQ_URL_from_BASE_URL(const std::string& base_url);
+    std::string get_URL_from_URL_PARTS(const std::string& base_url, const std::vector<std::string>& URL_PARTS);
     void main_attributes_filler(const nlohmann::json& json_data);
     void air_quality_attributes_filler(const nlohmann::json& json_data);
     nlohmann::json json_getter(const std::string& API_URL);
